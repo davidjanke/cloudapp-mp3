@@ -15,37 +15,49 @@ import backtype.storm.tuple.Values;
  */
 public class TopWordFinderTopologyPartA {
 
-  public static void main(String[] args) throws Exception {
+    static String spoutName = "spout";
+    static String splitBoltName = "split";
 
-    TopologyBuilder builder = new TopologyBuilder();
+    public static void main(String[] args) throws Exception {
 
-    Config config = new Config();
-    config.setDebug(true);
+        TopologyBuilder builder = new TopologyBuilder();
 
-
-    /*
-    ----------------------TODO-----------------------
-    Task: wire up the topology
-
-    NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
-    you use the following names for each component:
-
-    RandomSentanceSpout -> "spout"
-    SplitSentenceBolt -> "split"
-    WordCountBolt -> "count"
+        Config config = new Config();
+        config.setDebug(true);
 
 
-    ------------------------------------------------- */
+        /*
+        ----------------------TODO-----------------------
+        Task: wire up the topology
+
+        NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
+        you use the following names for each component:
+
+        RandomSentanceSpout -> "spout"
+        SplitSentenceBolt -> "split"
+        WordCountBolt -> "count"
 
 
-    config.setMaxTaskParallelism(3);
+        ------------------------------------------------- */
 
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("word-count", config, builder.createTopology());
+        RandomSentenceSpout randomSentenceSpout = new RandomSentenceSpout();
+        SplitSentenceBolt splitSentenceBolt = new SplitSentenceBolt();
+        WordCountBolt wordCountBolt = new WordCountBolt();
 
-    //wait for 60 seconds and then kill the topology
-    Thread.sleep(60 * 1000);
+        builder.setSpout(spoutName, randomSentenceSpout, 5);
+        builder.setBolt(splitBoltName, splitSentenceBolt, 8).shuffleGrouping(spoutName);
+        builder.setBolt("count", wordCountBolt).fieldsGrouping(splitBoltName, new Fields("word"));
 
-    cluster.shutdown();
-  }
+
+
+        config.setMaxTaskParallelism(3);
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("word-count", config, builder.createTopology());
+
+        //wait for 60 seconds and then kill the topology
+        Thread.sleep(60 * 1000);
+
+        cluster.shutdown();
+    }
 }
