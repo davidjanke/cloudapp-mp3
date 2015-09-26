@@ -39,7 +39,7 @@ public class NormalizerBolt extends BaseBasicBolt {
     }
 
     private String normalizeWord(String word) {
-        return word.toLowerCase().trim();
+        return word.toLowerCase();
     }
 
     private boolean commonWord(String token) {
