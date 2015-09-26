@@ -33,7 +33,7 @@ public class NormalizerBolt extends BaseBasicBolt {
 
         String normalizedWord = normalizeWord(word);
         if(!commonWord(normalizedWord)) {
-            collector.emit(new Values(word));
+            collector.emit(new Values(normalizedWord));
         }
 
     }

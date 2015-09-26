@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * a bolt that finds the top n words.
  */
 public class TopNFinderBolt extends BaseBasicBolt {
-    private ConcurrentHashMap<String, Integer> currentTopWords = new ConcurrentHashMap<String, Integer>();
+    private HashMap<String, Integer> currentTopWords = new HashMap<String, Integer>();
 
     private int N;
 
