@@ -1,52 +1,54 @@
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.BasicOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 
 /**
  * This topology reads a file and counts the words in that file
  */
 public class TopWordFinderTopologyPartB {
 
-  public static void main(String[] args) throws Exception {
+    static String spoutName = "spout";
+    static String splitBoltName = "split";
+
+    public static void main(String[] args) throws Exception {
+
+        TopologyBuilder builder = new TopologyBuilder();
+
+        Config config = new Config();
+        config.setDebug(true);
 
 
-    TopologyBuilder builder = new TopologyBuilder();
+        /*
+        ----------------------TODO-----------------------
+        Task: wire up the topology
 
-    Config config = new Config();
-    config.setDebug(true);
+        NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
+        you use the following names for each component:
+        FileReaderSpout -> "spout"
+        SplitSentenceBolt -> "split"
+        WordCountBolt -> "count"
+        ------------------------------------------------- */
 
+        config.put("inputFileName", args[0]);
 
-    /*
-    ----------------------TODO-----------------------
-    Task: wire up the topology
+        IRichSpout spout = new FileReaderSpout(args[0]);
+        SplitSentenceBolt splitSentenceBolt = new SplitSentenceBolt();
+        WordCountBolt wordCountBolt = new WordCountBolt();
 
-    NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
-    you use the following names for each component:
-    FileReaderSpout -> "spout"
-    SplitSentenceBolt -> "split"
-    WordCountBolt -> "count"
+        builder.setSpout(spoutName, spout, 1);
+        builder.setBolt(splitBoltName, splitSentenceBolt, 8).shuffleGrouping(spoutName);
+        builder.setBolt("count", wordCountBolt).fieldsGrouping(splitBoltName, new Fields("word"));
 
+        config.setMaxTaskParallelism(3);
 
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("word-count", config, builder.createTopology());
 
-    ------------------------------------------------- */
+        //wait for 2 minutes and then kill the job
+        Thread.sleep( 2 * 60 * 1000);
 
-
-    config.setMaxTaskParallelism(3);
-
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("word-count", config, builder.createTopology());
-
-    //wait for 2 minutes and then kill the job
-    Thread.sleep( 2 * 60 * 1000);
-
-    cluster.shutdown();
-  }
+        cluster.shutdown();
+    }
 }
