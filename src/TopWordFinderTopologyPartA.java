@@ -36,8 +36,6 @@ public class TopWordFinderTopologyPartA {
         RandomSentanceSpout -> "spout"
         SplitSentenceBolt -> "split"
         WordCountBolt -> "count"
-
-
         ------------------------------------------------- */
 
         RandomSentenceSpout randomSentenceSpout = new RandomSentenceSpout();
