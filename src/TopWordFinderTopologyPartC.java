@@ -1,14 +1,9 @@
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.BasicOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.IBasicBolt;
+import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 
 /**
  * This topology reads a file, splits the senteces into words, normalizes the words such that all words are
@@ -16,40 +11,55 @@ import backtype.storm.tuple.Values;
  */
 public class TopWordFinderTopologyPartC {
 
-  public static void main(String[] args) throws Exception {
+    public static final String countBoltName = "count";
+    static String spoutName = "spout";
+    static String splitBoltName = "split";
+    static String normalizeBoltName = "normalize";
 
 
-    TopologyBuilder builder = new TopologyBuilder();
-
-    Config config = new Config();
-    config.setDebug(true);
+    public static void main(String[] args) throws Exception {
 
 
-    /*
-    ----------------------TODO-----------------------
-    Task: wire up the topology
+        TopologyBuilder builder = new TopologyBuilder();
 
-    NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
-    you use the following names for each component:
-
-    FileReaderSpout -> "spout"
-    SplitSentenceBolt -> "split"
-    WordCountBolt -> "count"
-    NormalizerBolt -> "normalize"
+        Config config = new Config();
+        config.setDebug(true);
 
 
+        /*
+        ----------------------TODO-----------------------
+        Task: wire up the topology
 
-    ------------------------------------------------- */
+        NOTE:make sure when connecting components together, using the functions setBolt(name,…) and setSpout(name,…),
+        you use the following names for each component:
 
+        FileReaderSpout -> "spout"
+        SplitSentenceBolt -> "split"
+        WordCountBolt -> "count"
+        NormalizerBolt -> "normalize"
 
-    config.setMaxTaskParallelism(3);
+        ------------------------------------------------- */
 
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("word-count", config, builder.createTopology());
+        config.put("inputFileName", args[0]);
 
-    //wait for 2 minutes then kill the job
-    Thread.sleep(2 * 60 * 1000);
+        IRichSpout spout = new FileReaderSpout(args[0]);
+        IBasicBolt splitSentenceBolt = new SplitSentenceBolt();
+        IBasicBolt wordCountBolt = new WordCountBolt();
+        IBasicBolt normalizerBolt = new NormalizerBolt();
 
-    cluster.shutdown();
-  }
+        builder.setSpout(spoutName, spout, 1);
+        builder.setBolt(splitBoltName, splitSentenceBolt, 8).shuffleGrouping(spoutName);
+        builder.setBolt(normalizeBoltName, normalizerBolt, 8).shuffleGrouping(splitBoltName);
+        builder.setBolt(countBoltName, wordCountBolt).fieldsGrouping(normalizeBoltName, new Fields("word"));
+
+        config.setMaxTaskParallelism(3);
+
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("word-count", config, builder.createTopology());
+
+        //wait for 2 minutes then kill the job
+        Thread.sleep(2 * 60 * 1000);
+
+        cluster.shutdown();
+    }
 }
